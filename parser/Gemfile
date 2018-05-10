@@ -1,0 +1,10 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+
+# Added at 2018-05-09 21:02:43 +0100 by nthompson:
+gem "faraday", "~> 0.15.0"
+
+# Added at 2018-05-10 21:10:48 +0100 by nthompson:
+gem "faraday_middleware", "~> 0.12.2"
