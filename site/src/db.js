@@ -5,4 +5,9 @@ const query = '';
 function search() {
 }
 
-export default { search, facetMap, activeFacets, query };
+export default {
+  search,
+  facetMap,
+  activeFacets,
+  query,
+};

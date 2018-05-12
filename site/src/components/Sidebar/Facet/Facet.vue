@@ -1,23 +1,29 @@
 <template>
   <div class="card card-default facet">
-    <div class="card-header" v-b-toggle="'collapse_' + aggregation.key">
-      <span class="icon"></span>
-      <span class="card-title small">{{aggregation.name}}</span>
+    <div
+      v-b-toggle="'collapse_' + aggregation.key"
+      class="card-header"
+    >
+      <span class="icon"/>
+      <span class="card-title small">{{ aggregation.name }}</span>
     </div>
 
-    <b-collapse :id="'collapse_' + aggregation.key" :visible="!!aggregation.isRefined">
+    <b-collapse
+      :id="'collapse_' + aggregation.key"
+      :visible="!!aggregation.isRefined"
+    >
       <ul class="list-group list-group-flush pre-scrollable">
         <li
           v-for="item in aggregation.items"
           :key="item.key"
-          class="list-group-item d-flex justify-content-between align-items-center"
           :class="{refined: item.refined}"
           :data-facet-key="aggregation.key"
           :data-facet-value="item.key"
-          v-on:click="refine"
+          class="list-group-item d-flex justify-content-between align-items-center"
+          @click="refine"
         >
-          <div class="value small">{{item.key}}</div>
-          <span class="badge badge-secondary badge-pill">{{item.doc_count}}</span>
+          <div class="value small">{{ item.key }}</div>
+          <span class="badge badge-secondary badge-pill">{{ item.doc_count }}</span>
         </li>
       </ul>
     </b-collapse>
@@ -29,16 +35,18 @@ import bCollapse from 'bootstrap-vue/es/components/collapse/collapse';
 import bToggle from 'bootstrap-vue/es/directives/toggle/toggle';
 
 export default {
-  props: {
-    aggregation: {
-      type: Object,
-    },
-  },
   components: {
     'b-collapse': bCollapse,
   },
   directives: {
     'b-toggle': bToggle,
+  },
+  props: {
+    aggregation: {
+      type: Object,
+      required: true,
+      default: () => {},
+    },
   },
   methods: {
     refine(e) {

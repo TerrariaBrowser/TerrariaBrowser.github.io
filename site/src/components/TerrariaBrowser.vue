@@ -1,17 +1,26 @@
 <template>
-  <div id="wrapper" v-bind:class="{ sidebarToggled: sidebarExpanded }">
+  <div
+    id="wrapper"
+    :class="{ sidebarToggled: sidebarExpanded }"
+  >
     <Sidebar
-      v-on:toggleSidebar="toggleSidebar"
-      v-on:runSearch="updateQuery"
-      v-on:toggleFacet="toggleFacet"
       :aggregations="aggregations"
-      />
-    <MainPageWrapper :hits="hits" :searchInProgress="searchInProgress" />
+      :query="query"
+      @toggleSidebar="toggleSidebar"
+      @runSearch="updateQuery"
+      @toggleFacet="toggleFacet"
+    />
+    <MainPageWrapper
+      :hits="hits"
+      :search-in-progress="searchInProgress"
+    />
   </div>
 </template>
 
 <script>
 import jQuery from 'jquery';
+import PouchDB from 'pouchdb-browser';
+
 import Sidebar from '@/components/Sidebar/Sidebar';
 import MainPageWrapper from '@/components/MainPageWrapper/MainPageWrapper';
 import DB from '@/db';
@@ -24,20 +33,57 @@ export default {
   data() {
     return {
       sidebarExpanded: false,
-      hits: null,
+      hits: [],
       aggregations: null,
       page: 0,
       loadMoreEnabled: false,
       searchInProgress: false,
-      items: [],
+      query: '',
+      itemsDb: new PouchDB('items'),
     };
   },
+  watch: {
+    '$route.params': {
+      immediate: true,
+      handler(routeParams) {
+        Object.keys(DB.facetMap).forEach((key) => {
+          if (routeParams[key] && routeParams[key] !== '-') {
+            DB.activeFacets[key] = routeParams[key].split(',');
+          } else {
+            DB.activeFacets[key] = null;
+          }
+        });
+
+        if (routeParams.query === undefined ||
+            routeParams.query.length === 0 ||
+            routeParams.query === '-') {
+          this.query = undefined;
+        } else {
+          this.query = routeParams.query;
+        }
+
+        this.page = 0;
+        this.searchInProgress = true;
+
+        this.runSearch();
+
+        this.searchInProgress = false;
+      },
+    },
+  },
   created() {
-    jQuery.getJSON('/static/items.json')
-      .done((data) => {
-        console.log(data);
-        this.items = data
-      });
+    PouchDB.debug.enable('pouchdb:find');
+
+    this.itemsDb.info().then((result) => {
+      if (result.doc_count === 0) {
+        this.itemsDb.createIndex({ index: { fields: ['name'] } });
+
+        jQuery.getJSON('/static/items.json')
+          .done((data) => {
+            this.itemsDb.bulkDocs(data);
+          });
+      }
+    });
   },
   methods: {
     loadMore() {
@@ -45,28 +91,19 @@ export default {
         this.page += 1;
         this.searchInProgress = true;
 
-        // this.hits = this.items.filter(item => item.name.toLowerCase().includes(DB.query))
         this.runSearch();
-
-        // DB.search(this.page)
-        //   .then((response) => {
-        //     this.hits.push(...response.hits.hits);
-        //     this.aggregations = response.aggregations;
-        //     this.loadMoreEnabled = (DB.pageLength === response.hits.hits.length);
-        //   })
-        //   .finally(() => { this.searchInProgress = false; });
       }
     },
     toggleSidebar() {
       this.sidebarExpanded = !this.sidebarExpanded;
     },
     updateQuery(query) {
-      DB.query = query;
+      this.query = query;
       this.updateRoute();
     },
     updateRoute() {
       // Params starts with query.
-      const params = { query: DB.query };
+      const params = { query: this.query };
       if (params.query === undefined || params.query.length === 0) {
         params.query = '-';
       }
@@ -111,48 +148,26 @@ export default {
       this.updateRoute();
     },
     runSearch() {
-      this.hits = this.items.filter(item => item.name.toLowerCase().includes(DB.query.toLowerCase()));
-    },
-  },
-  watch: {
-    items () {
-      this.runSearch();
-    },
-    '$route.params': {
-      immediate: true,
-      handler(routeParams) {
-        console.log('UPDATED');
-        Object.keys(DB.facetMap).forEach((key) => {
-          if (routeParams[key] && routeParams[key] !== '-') {
-            DB.activeFacets[key] = routeParams[key].split(',');
-          } else {
-            DB.activeFacets[key] = null;
-          }
-        });
+      // this.itemsDb.getIndexes().then(result => console.log('INDEXES', result));
+      const regexp = new RegExp(this.query, 'i');
 
-        if (routeParams.query === undefined ||
-            routeParams.query.length === 0 ||
-            routeParams.query === '-') {
-          DB.query = undefined;
-        } else {
-          DB.query = routeParams.query;
-        }
-
-        this.page = 0;
-        this.searchInProgress = true;
-
-        this.runSearch();
-
-        this.searchInProgress = false;
-
-        // DB.search(0)
-        //   .then((response) => {
-        //     this.hits = response.hits.hits;
-        //     this.aggregations = response.aggregations;
-        //     this.loadMoreEnabled = (DB.pageLength === response.hits.hits.length);
-        //   })
-        //   .finally(() => { this.searchInProgress = false; });
-      },
+      this.itemsDb.find({
+        selector: {
+          $and: [
+            { name: { $gt: null } },
+            { name: { $regex: regexp } },
+          ],
+        },
+        limit: 24,
+        sort: [{ name: 'asc' }],
+      }).then((result) => {
+        // eslint-disable-next-line no-console
+        console.log('QUERY RESULT', result);
+        this.hits = result.docs;
+      }).catch((err) => {
+        // eslint-disable-next-line no-console
+        console.error(err);
+      });
     },
   },
 };

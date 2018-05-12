@@ -7,10 +7,16 @@
         </div>
       </div>
       <div class="row">
-        <p v-if="hits == null">Lets do a search!</p>
-        <Result v-for="hit in hits" :hit="hit" :key="hit._id"/>
+        <p v-if="!hits.length">
+          Lets do a search!
+        </p>
+        <Result
+          v-for="hit in hits"
+          :hit="hit"
+          :key="hit._id"
+        />
         <Spinner v-if="searchInProgress" />
-        <div id="pager"></div>
+        <div id="pager" />
       </div>
     </div>
   </div>
@@ -21,10 +27,13 @@ import Result from './Result/Result';
 import Spinner from './Spinner/Spinner';
 
 export default {
-  props: ['hits', 'searchInProgress'],
   components: {
     Result,
     Spinner,
+  },
+  props: {
+    hits: { type: Array, default: () => [] },
+    searchInProgress: { type: Boolean, required: true },
   },
 };
 </script>
