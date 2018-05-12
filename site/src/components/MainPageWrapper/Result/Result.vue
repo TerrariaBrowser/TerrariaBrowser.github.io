@@ -1,9 +1,17 @@
 <template>
   <div class="resultWrapper">
     <div class="result">
+      <p
+        v-if="hit.itemid > 0"
+        class="float-right"><img :src="imageSrc"></p>
+
       <h3>{{ hit.name }}</h3>
-      <p>ID: {{ hit.itemid }}</p>
-      <p><img :src="imageSrc"></p>
+
+      <p
+        v-if="hit.itemid > 0"
+        class="clearfix">ID: {{ hit.itemid }}</p>
+
+      <p>Type: {{ hit.type }}</p>
     </div>
   </div>
 </template>

@@ -19,8 +19,6 @@
 
 <script>
 import jQuery from 'jquery';
-import PouchDB from 'pouchdb-browser';
-
 import Sidebar from '@/components/Sidebar/Sidebar';
 import MainPageWrapper from '@/components/MainPageWrapper/MainPageWrapper';
 import DB from '@/db';
@@ -39,7 +37,7 @@ export default {
       loadMoreEnabled: false,
       searchInProgress: false,
       query: '',
-      itemsDb: new PouchDB('items'),
+      items: [],
     };
   },
   watch: {
@@ -72,18 +70,11 @@ export default {
     },
   },
   created() {
-    PouchDB.debug.enable('pouchdb:find');
-
-    this.itemsDb.info().then((result) => {
-      if (result.doc_count === 0) {
-        this.itemsDb.createIndex({ index: { fields: ['name'] } });
-
-        jQuery.getJSON('/static/items.json')
-          .done((data) => {
-            this.itemsDb.bulkDocs(data);
-          });
-      }
-    });
+    jQuery.getJSON('/static/items.json')
+      .done((data) => {
+        this.items = data;
+        this.runSearch();
+      });
   },
   methods: {
     loadMore() {
@@ -148,26 +139,18 @@ export default {
       this.updateRoute();
     },
     runSearch() {
-      // this.itemsDb.getIndexes().then(result => console.log('INDEXES', result));
-      const regexp = new RegExp(this.query, 'i');
+      // @TODO - pagination?!
 
-      this.itemsDb.find({
-        selector: {
-          $and: [
-            { name: { $gt: null } },
-            { name: { $regex: regexp } },
-          ],
-        },
-        limit: 24,
-        sort: [{ name: 'asc' }],
-      }).then((result) => {
-        // eslint-disable-next-line no-console
-        console.log('QUERY RESULT', result);
-        this.hits = result.docs;
-      }).catch((err) => {
-        // eslint-disable-next-line no-console
-        console.error(err);
-      });
+      new Promise((resolve) => {
+        const regexp = new RegExp(this.query, 'i');
+        // resolve(this.items.filter(i => i.name.match(regexp)));
+        resolve(this.items.reduce((a, i) => {
+          if (a.length < 30 && i.name.match(regexp)) {
+            a.push(i);
+          }
+          return a;
+        }, []));
+      }).then((data) => { this.hits = data; });
     },
   },
 };
