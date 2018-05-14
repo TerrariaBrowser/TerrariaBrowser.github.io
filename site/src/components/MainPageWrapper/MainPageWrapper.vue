@@ -7,11 +7,12 @@
         </div>
       </div>
       <div class="row">
-        <p v-if="!hits.length">
+        <p v-if="hits === null">
           Lets do a search!
         </p>
         <Result
-          v-for="hit in hits"
+          v-for="hit in hits.hits"
+          v-else
           :hit="hit"
           :key="hit._id"
         />
@@ -32,7 +33,7 @@ export default {
     Spinner,
   },
   props: {
-    hits: { type: Array, default: () => [] },
+    hits: { type: Object, default: () => {} },
     searchInProgress: { type: Boolean, required: true },
   },
 };

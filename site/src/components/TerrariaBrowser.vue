@@ -31,11 +31,12 @@ export default {
   data() {
     return {
       sidebarExpanded: false,
-      hits: [],
+      hits: null,
       aggregations: null,
       page: 0,
       loadMoreEnabled: false,
       searchInProgress: false,
+      activeFacets: {},
       query: '',
       items: [],
     };
@@ -46,9 +47,9 @@ export default {
       handler(routeParams) {
         Object.keys(DB.facetMap).forEach((key) => {
           if (routeParams[key] && routeParams[key] !== '-') {
-            DB.activeFacets[key] = routeParams[key].split(',');
+            this.activeFacets[key] = routeParams[key].split(',');
           } else {
-            DB.activeFacets[key] = null;
+            this.activeFacets[key] = null;
           }
         });
 
@@ -102,8 +103,8 @@ export default {
       // Now add a param for each of the facetMap. Each param will be at least '-'.
       Object.keys(DB.facetMap).forEach((key) => {
         params[key] = '-';
-        if (DB.activeFacets[key] && DB.activeFacets[key].length) {
-          params[key] = DB.activeFacets[key].join(',');
+        if (this.activeFacets[key] && this.activeFacets[key].length) {
+          params[key] = this.activeFacets[key].join(',');
         }
       });
 
@@ -125,32 +126,117 @@ export default {
       });
     },
     toggleFacet(key, value) {
-      DB.activeFacets[key] = DB.activeFacets[key] || [];
+      this.activeFacets[key] = this.activeFacets[key] || [];
 
       // If this value exists in the array, splice it out.
-      const existingIndex = DB.activeFacets[key].indexOf(value);
+      const existingIndex = this.activeFacets[key].indexOf(value);
       if (existingIndex !== -1) {
-        DB.activeFacets[key].splice(existingIndex, 1);
+        this.activeFacets[key].splice(existingIndex, 1);
       } else {
         // Otherwise push it in.
-        DB.activeFacets[key].push(value);
+        this.activeFacets[key].push(value);
       }
 
       this.updateRoute();
     },
     runSearch() {
+      const perPage = 30;
       // @TODO - pagination?!
+      // const page = 1;
 
+      // Run the JSON search in a promise to make it async. Should stop typing getting blocked.
       new Promise((resolve) => {
+        // Convert our query to regex; Stragely, regex benchmarks faster than a string indexOf!
         const regexp = new RegExp(this.query, 'i');
-        // resolve(this.items.filter(i => i.name.match(regexp)));
-        resolve(this.items.reduce((a, i) => {
-          if (a.length < 30 && i.name.match(regexp)) {
-            a.push(i);
+
+        // Resolve this promise with the result of a reduce.
+        resolve(this.items.reduce(
+          (result, item) => {
+            // Check if this item's name matches our regex. If not, bail early.
+            if (!item.name.match(regexp)) {
+              return result;
+            }
+
+            // Copy result to avoid the no-param-reassign lint errors.
+            const newResult = result;
+
+            // Process facet keys
+            Object.keys(DB.facetMap).forEach((aggKey) => {
+              // Does this itme have a value for this key?
+              // @TODO - need to do this better...
+              if (item[aggKey].length) {
+                // Do we have an aggregation entry for it? If not, stub it.
+                if (typeof newResult.aggregations[aggKey] === 'undefined') {
+                  newResult.aggregations[aggKey] = {
+                    key: aggKey,
+                    buckets: [],
+                    isRefined: !!this.activeFacets[aggKey] && this.activeFacets[aggKey].length,
+                  };
+                }
+
+                const { buckets } = newResult.aggregations[aggKey];
+                const bucketIndex = buckets.findIndex(i => i.key === item[aggKey]);
+                if (bucketIndex !== -1) {
+                  buckets[bucketIndex].doc_count += 1;
+                } else {
+                  let isRefined = false;
+                  if (this.activeFacets[aggKey]) {
+                    isRefined = this.activeFacets[aggKey].indexOf(item[aggKey]) !== -1;
+                  }
+
+                  buckets.push({
+                    isRefined,
+                    key: item[aggKey],
+                    doc_count: 1,
+                  });
+                }
+              }
+            });
+
+            // Deal with facets
+            try {
+              Object.keys(this.activeFacets).forEach((aggKey) => {
+                // Skip if this facet is empty.
+                if (this.activeFacets[aggKey] && this.activeFacets[aggKey].length) {
+                  // Check if this items value for aggKey is one of the set facet values.
+                  if (this.activeFacets[aggKey].indexOf(item[aggKey]) === -1) {
+                    throw new Error('Not Found');
+                  }
+                }
+              });
+            } catch (err) {
+              // If we catch an error here, bail out. We throw errors if a facet does not match.
+              return newResult;
+            }
+
+            // It does, increment to total matches counter.
+            newResult.hits.total += 1;
+
+            // If we're within our perPage limit, push it to the hits.
+            if (newResult.hits.hits.length < perPage) {
+              newResult.hits.hits.push(item);
+            }
+
+            // Return the modified results.
+            return newResult;
+          },
+          // We setup the result set to mimick an elastic search. Should mean if we
+          // want to change backends in the future, it might make it easier!
+          { hits: { total: 0, hits: [] }, aggregations: {} },
+        ));
+      }).then((result) => {
+        // Set hits.
+        this.hits = result.hits;
+
+        // Sort the buckets
+        Object.keys(DB.facetMap).forEach((aggKey) => {
+          if (result.aggregations[aggKey]) {
+            result.aggregations[aggKey].buckets.sort((a, b) => b.doc_count - a.doc_count);
           }
-          return a;
-        }, []));
-      }).then((data) => { this.hits = data; });
+        });
+        // Set the aggregations
+        this.aggregations = result.aggregations;
+      });
     },
   },
 };

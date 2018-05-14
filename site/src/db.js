@@ -1,13 +1,7 @@
-const facetMap = {};
-const activeFacets = {};
-const query = '';
-
-function search() {
-}
+const facetMap = {
+  type: { title: 'Type' },
+};
 
 export default {
-  search,
   facetMap,
-  activeFacets,
-  query,
 };

@@ -1,7 +1,5 @@
 <template>
-  <div
-    id="sidebar-wrapper"
-  >
+  <div id="sidebar-wrapper">
     <div class="container-fluid">
       <div class="row">
         <div class="col-sm-2">
@@ -63,14 +61,8 @@ export default {
     Facet,
   },
   props: {
-    query: {
-      type: String,
-      default: '',
-    },
-    aggregations: {
-      type: Array,
-      default: () => [],
-    },
+    query: { type: String, default: '' },
+    aggregations: { type: Object, default: () => {} },
   },
   data() {
     return {
