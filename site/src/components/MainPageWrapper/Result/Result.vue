@@ -23,13 +23,32 @@
         <b-tab
           title="Crafting"
           title-link-class="px-2 py-1">
-          <p>Crafting</p>
+          <div
+            v-for="crafts of hit._crafts"
+            :key="crafts.id">
+            <h5>{{ crafts.result }}</h5>
+            <b-table
+              :items="crafts.ingredients"
+              :key="crafts.id"
+              striped
+              hover
+              small
+              class="small" />
+
+          </div>
         </b-tab>
 
         <b-tab
           title="Crafted"
           title-link-class="px-2 py-1">
-          <p>Crafted</p>
+          <b-table
+            v-for="crafted of hit._crafted"
+            :items="crafted.ingredients"
+            :key="crafted.id"
+            striped
+            hover
+            small
+            class="small" />
         </b-tab>
       </b-tabs>
     </div>
@@ -56,7 +75,7 @@ export default {
     overviewAttributes() {
       return Object.keys(this.hit).reduce((ret, key) => {
         // Hard-Skip these fields. (at lest for now!)
-        if (key === 'name' || key === 'sellvalue' || key === 'buyvalue') return ret;
+        if (key === 'name' || key === 'sellvalue' || key === 'buyvalue' || key.indexOf('_') === 0) return ret;
 
         // Skip empty items.
         if (this.hit[key] === null || this.hit[key].length === 0) return ret;

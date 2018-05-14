@@ -39,6 +39,7 @@ export default {
       activeFacets: {},
       query: '',
       items: [],
+      recipes: [],
     };
   },
   watch: {
@@ -71,11 +72,13 @@ export default {
     },
   },
   created() {
-    jQuery.getJSON('/static/items.json')
-      .done((data) => {
-        this.items = data;
-        this.runSearch();
-      });
+    jQuery.when(
+      jQuery.getJSON('/static/items.json'),
+      jQuery.getJSON('/static/recipes.json'),
+    ).done((items, recipes) => {
+      [this.items, this.recipes] = [items[0], recipes[0]];
+      this.runSearch();
+    });
   },
   methods: {
     loadMore() {
@@ -214,7 +217,20 @@ export default {
 
             // If we're within our perPage limit, push it to the hits.
             if (newResult.hits.hits.length < perPage) {
-              newResult.hits.hits.push(item);
+              const newItem = item;
+              // @TODO - on create, create a map of itemid > name and vice versa
+
+              // eslint-disable-next-line no-underscore-dangle
+              newItem._crafted = this.recipes.filter(r => r.result === item.name);
+
+              // eslint-disable-next-line no-underscore-dangle,arrow-body-style
+              newItem._crafts = this.recipes.filter((r) => {
+              // eslint-disable-next-line arrow-body-style
+                return r.ingredients && r.ingredients.filter((i) => {
+                  return item.name in i;
+                }).length;
+              });
+              newResult.hits.hits.push(newItem);
             }
 
             // Return the modified results.

@@ -14,7 +14,7 @@
           v-for="hit in hits.hits"
           v-else
           :hit="hit"
-          :key="hit._id"
+          :key="hit.itemid"
         />
         <Spinner v-if="searchInProgress" />
         <div id="pager" />
