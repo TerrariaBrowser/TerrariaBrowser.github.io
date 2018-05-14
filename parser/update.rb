@@ -10,13 +10,11 @@ items = Terraria::Client.new(:json).get_items.body
 puts "Got #{items.length} items... Parsing... "
 parsed = Terraria::Parser.new(items).parse_items
 puts "Parsing done. Saving #{parsed.length} items."
-File.open("items.json", "w") do |f|
-  f.write(parsed.to_json)
+File.open("../site/static/items.json", "w") do |f|
+  f.write(JSON.pretty_generate(parsed))
 end
 puts "Done!"
 puts "\n\n---\n\n"
-
-exit
 
 # Get Stations
 STATIONS=%w(
@@ -54,6 +52,7 @@ STATIONS=%w(
 
 recipes = []
 
+client = Terraria::Client.new
 STATIONS.each do |station|
   puts "#{station} : Fetching..."
   markup = client.get_recipes(station).body
@@ -69,8 +68,8 @@ end
 
 puts "Finished. Total recipes: #{recipes.length}"
 puts "Saving..."
-File.open("recipes.json", "w") do |f|
-  f.write(parsed.to_json)
+File.open("../site/static/recipes.json", "w") do |f|
+  f.write(JSON.pretty_generate(recipes))
 end
 puts "Done!"
 puts "\n\n---\n\n"
