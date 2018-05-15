@@ -28,7 +28,7 @@
 
         <b-tab
           v-if="hit._crafts.length"
-          title="Crafting"
+          title="Makes"
           title-link-class="px-2 py-1">
           <Recipe
             v-for="recipe of hit._crafts"
@@ -38,7 +38,7 @@
 
         <b-tab
           v-if="hit._crafted.length"
-          title="Crafted"
+          title="Made From"
           title-link-class="px-2 py-1">
           <Recipe
             v-for="recipe of hit._crafted"
