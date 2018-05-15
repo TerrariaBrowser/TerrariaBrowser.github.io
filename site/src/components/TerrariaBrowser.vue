@@ -225,10 +225,7 @@ export default {
 
               // eslint-disable-next-line no-underscore-dangle,arrow-body-style
               newItem._crafts = this.recipes.filter((r) => {
-              // eslint-disable-next-line arrow-body-style
-                return r.ingredients && r.ingredients.filter((i) => {
-                  return item.name in i;
-                }).length;
+                return r.ingredients && (item.name in r.ingredients);
               });
               newResult.hits.hits.push(newItem);
             }

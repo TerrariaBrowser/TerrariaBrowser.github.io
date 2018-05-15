@@ -6,7 +6,8 @@ module Terraria
 
     def parse_items
       # TODO - need to parse the markup (items)
-      return @markup
+      # pp @markup
+      return @markup.uniq { |i| i['itemid'] }
     end
 
     def parse_crafts
@@ -52,8 +53,8 @@ module Terraria
           # Ingredients gets treated differently
           unless matches_hash['ingredient'].nil?
             matches_hash['ingredient_amount'] ||= 1
-            item['ingredients'] ||= []
-            item['ingredients'].push Hash[ matches_hash['ingredient'], matches_hash['ingredient_amount'] ]
+            item['ingredients'] ||= {}
+            item['ingredients'][matches_hash['ingredient']] = matches_hash['ingredient_amount'].to_i
           else
             # Process result_amount
             if matches_hash.has_key? 'result_amount'

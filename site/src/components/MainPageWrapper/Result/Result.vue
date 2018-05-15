@@ -1,11 +1,12 @@
 <template>
   <div class="resultWrapper">
-    <div class="result p-3 mb-2">
-      <p
+    <div class="result p-3 mb-4">
+      <img
         v-if="hit.itemid > 0"
-        class="float-right"><img :src="imageSrc"></p>
+        :src="imageSrc"
+        class="float-right">
 
-      <h3>{{ hit.name }}</h3>
+      <h4>{{ hit.name }}</h4>
 
       <b-tabs small>
         <b-tab
@@ -21,34 +22,24 @@
         </b-tab>
 
         <b-tab
+          v-if="hit._crafts.length"
           title="Crafting"
           title-link-class="px-2 py-1">
-          <div
-            v-for="crafts of hit._crafts"
-            :key="crafts.id">
-            <h5>{{ crafts.result }}</h5>
-            <b-table
-              :items="crafts.ingredients"
-              :key="crafts.id"
-              striped
-              hover
-              small
-              class="small" />
-
-          </div>
+          <Recipe
+            v-for="recipe of hit._crafts"
+            :recipe="recipe"
+            :key="recipe.id" />
         </b-tab>
 
         <b-tab
+          v-if="hit._crafted.length"
           title="Crafted"
           title-link-class="px-2 py-1">
-          <b-table
-            v-for="crafted of hit._crafted"
-            :items="crafted.ingredients"
-            :key="crafted.id"
-            striped
-            hover
-            small
-            class="small" />
+          <Recipe
+            v-for="recipe of hit._crafted"
+            :recipe="recipe"
+            :show-title="false"
+            :key="recipe.id" />
         </b-tab>
       </b-tabs>
     </div>
@@ -56,6 +47,8 @@
 </template>
 
 <script>
+import Recipe from './Recipe/Recipe';
+
 export default {
   filters: {
     formatLongNumber(number) {
@@ -64,6 +57,9 @@ export default {
       const suffix = 'kmbt'[base - 1];
       return suffix ? (number / (1000 ** base)).toFixed(decimalPlaces) + suffix : number;
     },
+  },
+  components: {
+    Recipe,
   },
   props: {
     hit: { type: Object, required: true, default: () => {} },

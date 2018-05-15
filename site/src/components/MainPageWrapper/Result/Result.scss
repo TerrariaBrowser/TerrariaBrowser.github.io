@@ -4,12 +4,17 @@
   @include media-breakpoint-up(md) { @include make-col(12) }
   @include media-breakpoint-up(lg) { @include make-col(6) }
   @include media-breakpoint-up(xl) { @include make-col(4) }
+  @media (min-width: 1440px) { @include make-col(3) }
+  @media (min-width: 1920px) { @include make-col(3) }
+  @media (min-width: 2560px) { @include make-col(2) }
 }
 .sidebarToggled {
   .resultWrapper {
     @include media-breakpoint-up(md) { @include make-col(6) }
     @include media-breakpoint-up(lg) { @include make-col(4) }
     @include media-breakpoint-up(xl) { @include make-col(3) }
+    @media (min-width: 1440px) { @include make-col(3) }
+    @media (min-width: 1920px) { @include make-col(2) }
   }
 }
 .result {
@@ -37,6 +42,13 @@
         font-weight: normal;
         margin: 0 0.5em 0.5em 0;
         flex: 1;
+      }
+    }
+  }
+  .tab-pane {
+    .table {
+      th {
+        border-top: none;
       }
     }
   }
