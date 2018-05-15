@@ -18,7 +18,12 @@
             striped
             hover
             small
-            class="small" />
+            class="small">
+            <span
+              slot="value"
+              slot-scope="data"
+              v-html="data.value" />
+          </b-table>
         </b-tab>
 
         <b-tab
@@ -47,6 +52,7 @@
 </template>
 
 <script>
+import sanitizeHtml from 'sanitize-html';
 import Recipe from './Recipe/Recipe';
 
 export default {
@@ -69,17 +75,26 @@ export default {
       return `/static/images/items/Item_${this.hit.itemid}.png`;
     },
     overviewAttributes() {
-      return Object.keys(this.hit).reduce((ret, key) => {
+      return Object.keys(this.hit).reduce((ret, attribute) => {
         // Hard-Skip these fields. (at lest for now!)
-        if (key === 'name' || key === 'sellvalue' || key === 'buyvalue' || key.indexOf('_') === 0) return ret;
+        if (attribute === 'name' || attribute === 'sellvalue' || attribute === 'buyvalue' || attribute.indexOf('_') === 0) return ret;
 
         // Skip empty items.
-        if (this.hit[key] === null || this.hit[key].length === 0) return ret;
+        if (this.hit[attribute] === null || this.hit[attribute].length === 0) return ret;
+
+        let value = this.hit[attribute];
+        switch (attribute) {
+          case 'tooltip':
+            value = sanitizeHtml(value, { allowedTags: ['br'], allowedAttributes: [] });
+            break;
+          default:
+            value = sanitizeHtml(value, { allowedTags: [], allowedAttributes: [] });
+        }
 
         // @TODO - tooltop contains HTML...
         ret.push({
-          attribute: key,
-          value: this.hit[key],
+          attribute,
+          value,
         });
         return ret;
       }, []);

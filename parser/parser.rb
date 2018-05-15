@@ -1,3 +1,5 @@
+require 'htmlentities'
+
 module Terraria
   class Parser
     def initialize(markup)
@@ -5,9 +7,26 @@ module Terraria
     end
 
     def parse_items
-      # TODO - need to parse the markup (items)
-      # pp @markup
-      return @markup.uniq { |i| i['itemid'] }
+      @markup.uniq! { |i| i['itemid'] }
+      htmlentities = HTMLEntities.new
+
+      @markup.map do |item|
+        # Delete empty entries
+        item = item.delete_if { |k, v| v.nil? || v.to_s.empty? }
+
+        %w(name damage sellvalue buyvalue tooltip criticalchance buffduration).each do |field|
+          # Skip if not set
+          next unless item.key? field
+
+          # Process the item repeatedly until no HTML entities are left.
+          until (decoded = htmlentities.decode item[field]) == item[field]
+            item[field] = decoded
+          end
+        end
+
+        # TODO - need to parse the items attributes. Eg buy and sell value [[File..]] markdown for coin images/values. Or damage differences on platforms.
+        item
+      end
     end
 
     def parse_crafts

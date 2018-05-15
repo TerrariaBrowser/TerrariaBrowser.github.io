@@ -167,7 +167,7 @@ export default {
             Object.keys(DB.facetMap).forEach((aggKey) => {
               // Does this itme have a value for this key?
               // @TODO - need to do this better...
-              if (item[aggKey].length) {
+              if (item[aggKey] && item[aggKey].length) {
                 // Do we have an aggregation entry for it? If not, stub it.
                 if (typeof newResult.aggregations[aggKey] === 'undefined') {
                   newResult.aggregations[aggKey] = {

@@ -8,3 +8,6 @@ gem "faraday", "~> 0.15.0"
 
 # Added at 2018-05-10 21:10:48 +0100 by nthompson:
 gem "faraday_middleware", "~> 0.12.2"
+
+# Added at 2018-05-15 11:02:48 +0100 by nthompson:
+gem "htmlentities", "~> 4.3"
