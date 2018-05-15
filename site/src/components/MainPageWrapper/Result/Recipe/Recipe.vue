@@ -1,6 +1,6 @@
 <template>
   <div class="recipe-wrapper">
-    <h5 v-if="showTitle">{{ recipe.result }}</h5>
+    <h5 v-if="showTitle">{{ recipe.result }} ({{ recipe.station }})</h5>
     <b-table
       :items="ingredientRows"
       :key="recipe.id"
