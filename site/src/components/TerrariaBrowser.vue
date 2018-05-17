@@ -18,10 +18,8 @@
 </template>
 
 <script>
-import jQuery from 'jquery';
 import Sidebar from '@/components/Sidebar/Sidebar';
 import MainPageWrapper from '@/components/MainPageWrapper/MainPageWrapper';
-import DB from '@/db';
 
 export default {
   components: {
@@ -38,15 +36,13 @@ export default {
       searchInProgress: false,
       activeFacets: {},
       query: '',
-      items: [],
-      recipes: [],
     };
   },
   watch: {
     '$route.params': {
       immediate: true,
       handler(routeParams) {
-        Object.keys(DB.facetMap).forEach((key) => {
+        Object.keys(this.$store.state.facetMap).forEach((key) => {
           if (routeParams[key] && routeParams[key] !== '-') {
             this.activeFacets[key] = routeParams[key].split(',');
           } else {
@@ -72,11 +68,10 @@ export default {
     },
   },
   created() {
-    jQuery.when(
-      jQuery.getJSON('/static/items.json'),
-      jQuery.getJSON('/static/recipes.json'),
-    ).done((items, recipes) => {
-      [this.items, this.recipes] = [items[0], recipes[0]];
+    Promise.all([
+      this.$store.dispatch('fetchItems'),
+      this.$store.dispatch('fetchRecipes'),
+    ]).then(() => {
       this.runSearch();
     });
   },
@@ -104,7 +99,7 @@ export default {
       }
 
       // Now add a param for each of the facetMap. Each param will be at least '-'.
-      Object.keys(DB.facetMap).forEach((key) => {
+      Object.keys(this.$store.state.facetMap).forEach((key) => {
         params[key] = '-';
         if (this.activeFacets[key] && this.activeFacets[key].length) {
           params[key] = this.activeFacets[key].join(',');
@@ -112,7 +107,7 @@ export default {
       });
 
       // Strip any trailing - placeholders from the URL
-      ['query', ...Object.keys(DB.facetMap)].reverse().some((key) => {
+      ['query', ...Object.keys(this.$store.state.facetMap)].reverse().some((key) => {
         if (params[key] === '-') {
           // Remove key
           delete params[key];
@@ -143,6 +138,9 @@ export default {
       this.updateRoute();
     },
     runSearch() {
+      // Bail if the item store is empty (app still loading).
+      if (this.$store.state.items.length === 0) return;
+
       const perPage = 30;
       // @TODO - pagination?!
       // const page = 1;
@@ -153,7 +151,7 @@ export default {
         const regexp = new RegExp(this.query, 'i');
 
         // Resolve this promise with the result of a reduce.
-        resolve(this.items.reduce(
+        resolve(this.$store.state.items.reduce(
           (result, item) => {
             // Check if this item's name matches our regex. If not, bail early.
             if (!item.name.match(regexp)) {
@@ -164,7 +162,7 @@ export default {
             const newResult = result;
 
             // Process facet keys
-            Object.keys(DB.facetMap).forEach((aggKey) => {
+            Object.keys(this.$store.state.facetMap).forEach((aggKey) => {
               // Does this itme have a value for this key?
               // @TODO - need to do this better...
               if (item[aggKey] && item[aggKey].length) {
@@ -221,10 +219,10 @@ export default {
               // @TODO - on create, create a map of itemid > name and vice versa
 
               // eslint-disable-next-line no-underscore-dangle
-              newItem._crafted = this.recipes.filter(r => r.result === item.name);
+              newItem._crafted = this.$store.state.recipes.filter(r => r.result === item.name);
 
               // eslint-disable-next-line no-underscore-dangle,arrow-body-style
-              newItem._crafts = this.recipes.filter((r) => {
+              newItem._crafts = this.$store.state.recipes.filter((r) => {
                 return r.ingredients && (item.name in r.ingredients);
               });
               newResult.hits.hits.push(newItem);
@@ -242,7 +240,7 @@ export default {
         this.hits = result.hits;
 
         // Sort the buckets
-        Object.keys(DB.facetMap).forEach((aggKey) => {
+        Object.keys(this.$store.state.facetMap).forEach((aggKey) => {
           if (result.aggregations[aggKey]) {
             result.aggregations[aggKey].buckets.sort((a, b) => b.doc_count - a.doc_count);
           }

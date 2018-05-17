@@ -32,8 +32,6 @@
 </template>
 
 <script>
-import DB from '@/db';
-
 export default {
   props: {
     aggregation: {
@@ -44,7 +42,7 @@ export default {
   },
   computed: {
     title() {
-      return DB.facetMap[this.aggregation.key].title;
+      return this.$store.state.facetMap[this.aggregation.key].title;
     },
   },
 

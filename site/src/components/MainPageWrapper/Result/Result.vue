@@ -8,7 +8,9 @@
 
       <h4>{{ hit.name }}</h4>
 
-      <b-tabs small>
+      <b-tabs
+        small
+        lazy>
         <b-tab
           title="Overview"
           title-link-class="px-2 py-1"
@@ -30,10 +32,21 @@
           v-if="hit._crafts.length"
           title="Makes"
           title-link-class="px-2 py-1">
-          <Recipe
-            v-for="recipe of hit._crafts"
-            :recipe="recipe"
-            :key="recipe.id" />
+          <div
+            v-for="(group, section) of groupedMakes"
+            :key="section">
+            <h4 class="mt-5">
+              {{ group.title }}
+              <img
+                v-if="group.stationItem"
+                :src="group.stationImage"
+                class="float-right">
+            </h4>
+            <Recipe
+              v-for="recipe of group.items"
+              :recipe="recipe"
+              :key="recipe.id" />
+          </div>
         </b-tab>
 
         <b-tab
@@ -71,8 +84,27 @@ export default {
     hit: { type: Object, required: true, default: () => {} },
   },
   computed: {
-    imageSrc() {
-      return `/static/images/items/Item_${this.hit.itemid}.png`;
+    imageSrc() { return `/static/images/items/Item_${this.hit.itemid}.png`; },
+    groupedMakes() {
+      // eslint-disable-next-line no-underscore-dangle
+      return this.hit._crafts.reduce((ret, recipe) => {
+        const retCopy = ret;
+
+        if (retCopy[recipe.station] === undefined) {
+          const title = recipe.station.replace(/_/g, ' ');
+          const stationItem = this.stationItem(title);
+          const stationImage = stationItem ? `/static/images/items/Item_${stationItem.itemid}.png` : false;
+          retCopy[recipe.station] = {
+            title,
+            stationItem,
+            stationImage,
+            items: [],
+          };
+        }
+
+        retCopy[recipe.station].items.push(recipe);
+        return retCopy;
+      }, {});
     },
     overviewAttributes() {
       return Object.keys(this.hit).reduce((ret, attribute) => {
@@ -91,13 +123,17 @@ export default {
             value = sanitizeHtml(value, { allowedTags: [], allowedAttributes: [] });
         }
 
-        // @TODO - tooltop contains HTML...
         ret.push({
           attribute,
           value,
         });
         return ret;
       }, []);
+    },
+  },
+  methods: {
+    stationItem(stationName) {
+      return this.$store.getters.getItemByName(stationName);
     },
   },
 };
