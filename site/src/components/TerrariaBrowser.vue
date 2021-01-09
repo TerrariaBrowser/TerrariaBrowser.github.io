@@ -163,7 +163,7 @@ export default {
 
             // Process facet keys
             Object.keys(this.$store.state.facetMap).forEach((aggKey) => {
-              // Does this itme have a value for this key?
+              // Does this item have a value for this key?
               // @TODO - need to do this better...
               if (item[aggKey] && item[aggKey].length) {
                 // Do we have an aggregation entry for it? If not, stub it.
@@ -176,21 +176,24 @@ export default {
                 }
 
                 const { buckets } = newResult.aggregations[aggKey];
-                const bucketIndex = buckets.findIndex(i => i.key === item[aggKey]);
-                if (bucketIndex !== -1) {
-                  buckets[bucketIndex].doc_count += 1;
-                } else {
-                  let isRefined = false;
-                  if (this.activeFacets[aggKey]) {
-                    isRefined = this.activeFacets[aggKey].indexOf(item[aggKey]) !== -1;
-                  }
+                const itemValues = Array.isArray(item[aggKey]) ? item[aggKey] : [item[aggKey]];
+                itemValues.forEach((itemValue) => {
+                  const bucketIndex = buckets.findIndex(i => i.key === itemValue);
+                  if (bucketIndex !== -1) {
+                    buckets[bucketIndex].doc_count += 1;
+                  } else {
+                    let isRefined = false;
+                    if (this.activeFacets[aggKey]) {
+                      isRefined = this.activeFacets[aggKey].indexOf(itemValue) !== -1;
+                    }
 
-                  buckets.push({
-                    isRefined,
-                    key: item[aggKey],
-                    doc_count: 1,
-                  });
-                }
+                    buckets.push({
+                      isRefined,
+                      key: itemValue,
+                      doc_count: 1,
+                    });
+                  }
+                });
               }
             });
 
@@ -200,7 +203,14 @@ export default {
                 // Skip if this facet is empty.
                 if (this.activeFacets[aggKey] && this.activeFacets[aggKey].length) {
                   // Check if this items value for aggKey is one of the set facet values.
-                  if (this.activeFacets[aggKey].indexOf(item[aggKey]) === -1) {
+                  const itemValues = Array.isArray(item[aggKey]) ? item[aggKey] : [item[aggKey]];
+
+                  // Check if the itemValues share anything with the active facets.
+                  // eslint-disable-next-line max-len
+                  const matchingFacets = this.activeFacets[aggKey].filter(value => itemValues.includes(value));
+
+                  // Any shared matching facets? If not, throw an error.
+                  if (matchingFacets.length === 0) {
                     throw new Error('Not Found');
                   }
                 }

@@ -7,8 +7,10 @@ require './parser'
 # Get items
 puts "Fetching Items..."
 items = Terraria::Client.new(:json).get_items.body
+
 puts "Got #{items.length} items... Parsing... "
 parsed = Terraria::Parser.new(items).parse_items
+
 puts "Parsing done. Saving #{parsed.length} items."
 File.open("../site/static/items.json", "w") do |f|
   f.write(JSON.pretty_generate(parsed))

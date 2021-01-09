@@ -4,16 +4,20 @@ require 'json'
 
 module Terraria
   class Client
+    # buff
+    # buffduration
+    # idwall
+    # idtile
     ITEM_FIELDS = %w(
       itemid
       name
       damage
       damagetype
       autoswing
-      pickaxepower
-      axepower
-      hammerpower
-      baitpower
+      pick
+      axe
+      hammer
+      bait
       knockback
       placeable
       placedwidth
@@ -22,16 +26,12 @@ module Terraria
       mana
       tooltip
       consumable
-      criticalchance
+      critical
       rare
       usetime
       toolspeed
-      buff
-      buffduration
-      buyvalue
-      sellvalue
-      tileid
-      wallid
+      buy
+      sell
       hardmode
       type
     )

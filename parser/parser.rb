@@ -14,7 +14,7 @@ module Terraria
         # Delete empty entries
         item = item.delete_if { |k, v| v.nil? || v.to_s.empty? }
 
-        %w(name damage sellvalue buyvalue tooltip criticalchance buffduration).each do |field|
+        %w(name damage sell buy tooltip critical buffduration damagetype knockback).each do |field|
           # Skip if not set
           next unless item.key? field
 
@@ -22,7 +22,22 @@ module Terraria
           until (decoded = htmlentities.decode item[field]) == item[field]
             item[field] = decoded
           end
+
+          # Remove escape slashes
+          item[field].gsub!('\\', '')
+
+          # Remove handlebar style items, eg "Thing {{icon blah}}"
+          item[field].gsub!(/\s{{.+?}}/, '')
+
+          # Remove any HTML markup tags (bit hacky/primitive at the moment)
+          item[field].gsub!(/<.+?>/, '')
+
+          # Parse "[[File....|TITLE]]" things - assumes title is last param
+          # item[field].gsub!(/\[\[.+?\|(.+?)\]\]/, '\1')
+          item[field].gsub!(/\[\[File:[^\]]+\|([^\]]+?)\]\]/, '(\1)')
         end
+
+        item['type'].map! { |t| t.capitalize }
 
         # TODO - need to parse the items attributes. Eg buy and sell value [[File..]] markdown for coin images/values. Or damage differences on platforms.
         item
@@ -59,7 +74,7 @@ module Terraria
       )?
       $/mx
 
-      v = @markup.scan(pattern).map do |crafts_row|
+      @markup.scan(pattern).map do |crafts_row|
         item = {}
 
         crafts_row.each_line do |crafts_row_line|
